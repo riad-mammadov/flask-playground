@@ -17,11 +17,27 @@ with app.app_context():
 
 
 # Helper Functions
+
+
+# POST request handler for notes
 def handle_note_submission(title, content):
     new_note = Note(title=title, content=content)
     db.session.add(new_note)
     db.session.commit()
     return {"id": new_note.id, "message": "Note successfully created"}
+
+
+# GET request handler for notes
+def get_notes():
+    notes = db.session.execute(db.select(Note)).scalars().all()
+    return [
+        {
+            "id": note.id,
+            "title": note.title,
+            "content": note.content,
+        }
+        for note in notes
+    ]
 
 
 # Routes
@@ -34,7 +50,7 @@ def notes():
         print(title, content)
         return handle_note_submission(title, content)
     else:
-        pass
+        return get_notes()
 
 
 if __name__ == "__main__":
