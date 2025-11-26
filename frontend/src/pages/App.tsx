@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import type { AxiosResponse } from "axios";
 
@@ -6,7 +6,6 @@ interface Note {
   id: number;
   title: string;
   content: string;
-  created_at: Date;
 }
 
 function App() {
@@ -24,7 +23,6 @@ function App() {
         id: Date.now(),
         title: title.trim(),
         content: content.trim(),
-        created_at: new Date(),
       };
       try {
         const res: AxiosResponse = await axios.post(
@@ -33,13 +31,25 @@ function App() {
           { headers: { "Content-Type": "application/json" } }
         );
         const data = res.data;
+
         console.log(data);
-      } catch (error) {
-        console.log("Error submitting to DB");
+      } catch (err) {
+        console.error("An error has occured: ", err);
       }
       setNotes([newNote, ...notes]);
       setTitle("");
       setContent("");
+    }
+  };
+
+  const getNotes = async () => {
+    try {
+      const notes: AxiosResponse<Note[]> = await axios.get(
+        "http://127.0.0.1:5000/notes"
+      );
+      setNotes(notes.data);
+    } catch (error) {
+      console.log("Couldnt fetch notes: ", error);
     }
   };
 
@@ -75,15 +85,9 @@ function App() {
     setEditContent("");
   };
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date);
-  };
+  useEffect(() => {
+    getNotes();
+  }, []);
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -185,9 +189,6 @@ function App() {
                         </span>
                       )}
                     </p>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                      {formatDate(note.created_at)}
-                    </div>
                     <div className="flex gap-2 mt-auto">
                       <button
                         onClick={() => handleStartEdit(note)}
