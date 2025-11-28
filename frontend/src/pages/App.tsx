@@ -7,6 +7,16 @@ interface Note {
   title: string;
   content: string;
 }
+interface updateNote {
+  id: number;
+  title: string;
+  content: string;
+  message: string;
+}
+interface newNote {
+  title: string;
+  content: string;
+}
 
 function App() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -15,12 +25,13 @@ function App() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
+  const [toggleMessage, setToggleMessage] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState("");
 
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim() || content.trim()) {
-      const newNote: Note = {
-        id: Date.now(),
+      const newNote: newNote = {
         title: title.trim(),
         content: content.trim(),
       };
@@ -30,13 +41,12 @@ function App() {
           newNote,
           { headers: { "Content-Type": "application/json" } }
         );
-        const data = res.data;
-
+        const data: Note = res.data;
+        setNotes([data, ...notes]);
         console.log(data);
       } catch (err) {
         console.error("An error has occured: ", err);
       }
-      setNotes([newNote, ...notes]);
       setTitle("");
       setContent("");
     }
@@ -60,6 +70,12 @@ function App() {
       );
       if (response.data.message) {
         setNotes((prev) => prev.filter((note) => note.id !== id));
+        setToggleMessage(true);
+        setUpdateMessage(response.data.message);
+        setTimeout(() => {
+          setToggleMessage(false);
+          setUpdateMessage("");
+        }, 1500);
       }
     } catch (error) {
       console.log(error);
@@ -83,15 +99,22 @@ function App() {
 
   const handleSaveEdit = async (id: number, title: string, content: string) => {
     try {
-      const update: AxiosResponse<Note> = await axios.patch(
+      const response: AxiosResponse<updateNote> = await axios.patch(
         `http://127.0.0.1:5000/notes/${id}`,
         { title: title, content: content }
       );
       setNotes(
         notes.map((prev) =>
-          prev.id === id ? { ...prev, ...update.data } : prev
+          prev.id === id ? { ...prev, ...response.data } : prev
         )
       );
+      setToggleMessage(true);
+      setUpdateMessage(response.data.message);
+      setTimeout(() => {
+        setToggleMessage(false);
+        setUpdateMessage("");
+      }, 1500);
+
       setEditingId(null);
       setEditTitle("");
       setEditContent("");
@@ -107,6 +130,11 @@ function App() {
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {toggleMessage && (
+          <div className="absolute right-2.5 mb-6 bg-green-500 dark:bg-green-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+            <p className="font-medium">{updateMessage}</p>
+          </div>
+        )}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-slate-800 dark:text-slate-100 mb-2">
             Notes Playground
