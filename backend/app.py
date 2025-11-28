@@ -22,7 +22,11 @@ def handle_note_submission(title, content):
     new_note = Note(title=title, content=content)
     db.session.add(new_note)
     db.session.commit()
-    return {"id": new_note.id, "message": "Note successfully created"}
+    return {
+        "id": new_note.id,
+        "title": new_note.title,
+        "content": new_note.content,
+    }
 
 
 # GET request handler for notes
@@ -44,12 +48,12 @@ def get_note_by_id(id):
     return note
 
 
-# Handles updating the note
+# Patch request handler for note
 def handle_note_edit(id, updates):
     updated_note = get_note_by_id(id)
 
     if updated_note is None:
-        return {"error": "Note not found"}, 404
+        return {"message": "Note not found"}, 404
 
     if "title" in updates:
         updated_note.title = updates["title"]
@@ -61,6 +65,7 @@ def handle_note_edit(id, updates):
         "id": updated_note.id,
         "title": updated_note.title,
         "content": updated_note.content,
+        "message": "Note updated successfully",
     }
 
 
