@@ -53,11 +53,20 @@ function App() {
     }
   };
 
-  const handleDeleteNote = (id: number) => {
-    setNotes(notes.filter((note) => note.id !== id));
-    if (editingId === id) {
-      setEditingId(null);
+  const handleDeleteNote = async (id: number) => {
+    try {
+      const response: AxiosResponse<{ message: string }> = await axios.delete(
+        `http://127.0.0.1:5000/notes/${id}`
+      );
+      if (response.data.message) {
+        setNotes((prev) => prev.filter((note) => note.id !== id));
+      }
+    } catch (error) {
+      console.log(error);
     }
+    setEditingId(null);
+    setEditTitle("");
+    setEditContent("");
   };
 
   const handleStartEdit = (note: Note) => {
@@ -72,17 +81,23 @@ function App() {
     setEditContent("");
   };
 
-  const handleSaveEdit = (id: number) => {
-    setNotes(
-      notes.map((note) =>
-        note.id === id
-          ? { ...note, title: editTitle.trim(), content: editContent.trim() }
-          : note
-      )
-    );
-    setEditingId(null);
-    setEditTitle("");
-    setEditContent("");
+  const handleSaveEdit = async (id: number, title: string, content: string) => {
+    try {
+      const update: AxiosResponse<Note> = await axios.patch(
+        `http://127.0.0.1:5000/notes/${id}`,
+        { title: title, content: content }
+      );
+      setNotes(
+        notes.map((prev) =>
+          prev.id === id ? { ...prev, ...update.data } : prev
+        )
+      );
+      setEditingId(null);
+      setEditTitle("");
+      setEditContent("");
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   useEffect(() => {
@@ -162,7 +177,9 @@ function App() {
                     />
                     <div className="flex gap-2 mt-auto">
                       <button
-                        onClick={() => handleSaveEdit(note.id)}
+                        onClick={() =>
+                          handleSaveEdit(note.id, editTitle, editContent)
+                        }
                         className="flex-1 bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200"
                       >
                         Save
