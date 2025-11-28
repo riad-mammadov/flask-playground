@@ -17,8 +17,6 @@ with app.app_context():
 
 
 # Helper Functions
-
-
 # POST request handler for notes
 def handle_note_submission(title, content):
     new_note = Note(title=title, content=content)
@@ -40,7 +38,43 @@ def get_notes():
     ]
 
 
-# Routes
+# Get a specific note via ID
+def get_note_by_id(id):
+    note = db.session.execute(db.select(Note).filter_by(id=id)).scalars().one_or_none()
+    return note
+
+
+# Handles updating the note
+def handle_note_edit(id, updates):
+    updated_note = get_note_by_id(id)
+
+    if updated_note is None:
+        return {"error": "Note not found"}, 404
+
+    if "title" in updates:
+        updated_note.title = updates["title"]
+    if "content" in updates:
+        updated_note.content = updates["content"]
+    db.session.commit()
+
+    return {
+        "id": updated_note.id,
+        "title": updated_note.title,
+        "content": updated_note.content,
+    }
+
+
+# Handle deletion of note
+def handle_delete_note(id):
+    note_to_delete = get_note_by_id(id)
+    if note_to_delete is None:
+        return {"error": "Note not found"}, 404
+    db.session.delete(note_to_delete)
+    db.session.commit()
+    return {"message": "Note has been deleted successfully"}, 200
+
+
+# API Routes
 @app.route("/notes", methods=["GET", "POST"])
 def notes():
     if request.method == "POST":
@@ -51,6 +85,22 @@ def notes():
         return handle_note_submission(title, content)
     else:
         return get_notes()
+
+
+@app.route("/notes/<int:id>", methods=["PATCH", "DELETE"])
+def edit_notes(id):
+    if request.method == "PATCH":
+        updates = {}
+        data = request.get_json()
+        title = data.get("title")
+        content = data.get("content")
+        if title is not None:
+            updates["title"] = title
+        if content is not None:
+            updates["content"] = content
+        return handle_note_edit(id, updates)
+    else:
+        return handle_delete_note(id)
 
 
 if __name__ == "__main__":
